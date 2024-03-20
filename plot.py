@@ -1,42 +1,13 @@
 import serial
 import time
-from pygame import mixer
 import pandas as pd  # Import pandas library
+import os
+import csv
+from datetime import date, datetime 
+import seaborn as sns
+import matplotlib.pyplot as plt
 ser = serial.Serial('COM8', 115200, timeout=1)
 time.sleep(2)
-
-# def play(path): # สร้างฟังก์ชันชื่อ play โดยมี paremeter ชื่อ path
-#     mixer.init() # เริ่มใช้งาน mixer
-#     mixer.music.load(path) # โหลดไฟล์เสียง
-#     mixer.music.play() # เล่นไฟล์เสียง
-#     if (path == 'D:\Code\HeatMapSerialRead\heart-stop.mp3'): #
-#         time.sleep(0.3)
-#         mixer.music.stop()
-
-
-# # path sound
-# say = 'C:\\read_thermal\song\hello-thai.mp3'
-# read = 'C:\\read_thermal\song\\read.mp3'
-
-# play(say)
-
-
-
-# def countdown(seconds):
-#     for i in range(seconds, 0, -1):
-#         print(f"นับถอยหลัง: {i} วินาที", end='\r')  # เคลียร์บรรทัดก่อนหน้าแล้วแสดงข้อความใหม่
-#         time.sleep(1)
-
-#     print("นับถอยหลังเสร็จสิ้น")
-
-# try:
-#     seconds = int(input("ป้อนจำนวนวินาทีที่ต้องการนับถอยหลัง: "))
-#     countdown(seconds)
-# except ValueError:
-#     print("กรุณาป้อนจำนวนวินาทีให้ถูกต้อง")
-
-
-
 
 class ReadLine: # สร้าง class ชื่อ ReadLine
     def __init__(self, s): # สร้าง constructor โดยมี paremeter ชื่อ s
@@ -60,31 +31,38 @@ class ReadLine: # สร้าง class ชื่อ ReadLine
             else:
                 self.buf.extend(data) # กำหนดค่าให้กับตัวเเปร buff โดยให้เป็นค่าที่เก็บไว้ในตัวเเปร data
 
+class Plot:
+    def __init__(self, data, timeNow, name, roundLoop, save_directory="./plot_pic"):
+        self.data = data
+        self.time = int(datetime.timestamp(timeNow))
+        self.roundLoop = roundLoop
+        self.save_directory = save_directory
+        os.makedirs(self.save_directory, exist_ok=True)
+
+    def processPlot(self):
+        frame = [float(x.strip()) for x in self.data.split(',') if x]
+        frame2D = [frame[h * 8:(h + 1) * 8] for h in range(8)]
+        frame2D = list(map(list, zip(*frame2D)))
+        sns.heatmap(frame2D, annot=True,fmt=".1f", cmap="coolwarm", linewidths=.1, annot_kws={"size": 6}, yticklabels=False, xticklabels=False, vmin=22, vmax=29)
+        time_now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        title = f"Heatmap of AMG8833 data at Time: {time_now_str}"
+        plt.title(title)
+        filename = f"{self.time}_{self.roundLoop}.png"
+        filepath = os.path.join(self.save_directory, filename)
+        plt.savefig(filepath)
+        plt.show()
+        plt.close()
 
 try:
-    time.sleep(5)
     readline = ReadLine(ser)
+    
     while True:
-        line = readline.readline().decode('utf-8') # อ่านข้อมูลจาก Serial และแปลงเป็นข้อความ
-        print(line.strip()) 
+        line = readline.readline().decode().strip()
+        plot_instance = Plot(line, datetime.now(), "firstset", 1, save_directory="./temp_01")
         
+        plot_instance.processPlot()
+        print('plot')
+
 except KeyboardInterrupt:
     pass
 
-
-# class scraping:
-#     def process(self):
-
-#         # Read Serial
-#         serialRead = ReadLine(serial.Serial(self.port8, 115200))
-
-#         # Informatiom
-#         rounds = Prompt.ask("[bold cyan]Enter rounds[/bold cyan]")
-#         case = Prompt.ask("[bold cyan]Enter case[/bold cyan]")
-#         subject = Prompt.ask("[bold cyan]Enter name subject[/bold cyan]")
-#         bmi = Prompt.ask("[bold cyan]Enter shape of subject[/bold cyan]")
-#         pause = Prompt.ask(
-#             "[bold cyan]Enter pause time (SEC.)[/bold cyan]")
-#         label = int(Prompt.ask("[bold cyan]Enter label[/bold cyan] "))
-#         number = int(Prompt.ask(
-#             f"[bold cyan]Enter number of frames[/bold cyan] [bold green][DEFAULT[/bold green] [bold red]60[/bold red] [bold green]FRAME][/bold green] ", default=60))
