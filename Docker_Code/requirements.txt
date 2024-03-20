@@ -1,0 +1,6 @@
+torch
+pandas
+firebase_admin
+tqdm
+fastapi
+uvicorn==0.15.0
